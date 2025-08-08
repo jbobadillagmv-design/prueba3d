@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Configurador 3D Local</title>
+<style>
+  body { font-family: Arial; margin: 0; background: #f0f0f0; }
+  #menu { padding: 10px; background: #333; color: white; }
+  canvas { display: block; width: 100vw; height: 90vh; }
+</style>
+</head>
+<body>
+<div id="menu">
+  <label for="modelSelect">Modelo: </label>
+  <select id="modelSelect"></select>
+  <input type="color" id="colorPicker" value="#ffffff">
+</div>
+<canvas id="canvas3d"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({canvas: document.getElementById('canvas3d'), antialias: true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+camera.position.z = 5;
+
+let light = new THREE.AmbientLight(0xffffff, 1);
+scene.add(light);
+let loader = new THREE.GLTFLoader();
+let currentModel;
+
+function loadModel(name) {
+  if (currentModel) scene.remove(currentModel);
+  loader.load('modelos/' + name, function(gltf) {
+    currentModel = gltf.scene;
+    scene.add(currentModel);
+  });
+}
+
+fetch('modelos.json').then(r => r.json()).then(models => {
+  let select = document.getElementById('modelSelect');
+  models.forEach(m => {
+    let opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    select.appendChild(opt);
+  });
+  loadModel(models[0]);
+  select.addEventListener('change', e => loadModel(e.target.value));
+});
+
+document.getElementById('colorPicker').addEventListener('input', e => {
+  if (currentModel) {
+    currentModel.traverse(o => {
+      if (o.isMesh) o.material.color.set(e.target.value);
+    });
+  }
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
